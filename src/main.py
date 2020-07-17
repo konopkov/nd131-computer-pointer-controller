@@ -35,10 +35,13 @@ def draw_rectangle(frame, x1, y1, x2, y2):
 def main(args):
     model_face_detection = args.model_face_detection
     model_facial_landmarks = args.model_facial_landmarks
+    model_head_pose_estimation = args.model_head_pose_estimation 
     device = args.device
     video_file = args.video
     threshold = args.threshold
     extensions = args.extensions
+    is_streaming = bool(args.stream)
+    out_file_path = args.out
 
     face_detection = ModelFaceDetection(model_face_detection, device, extensions)
     face_detection.load_model()
@@ -46,13 +49,17 @@ def main(args):
     facial_landmarks = ModelFacialLandmarksDetection(model_facial_landmarks, device, extensions)
     facial_landmarks.load_model()
 
-    if sys.platform == "linux" or sys.platform == "linux2":
-        CODEC = 0x7634706d
-    elif sys.platform == "darwin":
-        CODEC = cv2.VideoWriter_fourcc('M','J','P','G')
-    else:
-        print("Unsupported OS.")
-        exit(1)
+    head_pose = ModelHeadPoseEstimation(model_head_pose_estimation, device, extensions)
+    head_pose.load_model()
+
+    if (out_file_path):
+        if sys.platform == "linux" or sys.platform == "linux2":
+            CODEC = 0x7634706d
+        elif sys.platform == "darwin":
+            CODEC = cv2.VideoWriter_fourcc('M','J','P','G')
+        else:
+            print("Unsupported OS.")
+            exit(1)
 
     try:
         cap=cv2.VideoCapture(video_file)
@@ -63,7 +70,9 @@ def main(args):
 
     width = int(cap.get(3))
     height = int(cap.get(4))
-    out = cv2.VideoWriter('out.mp4', CODEC, 30, (width, height))
+
+    if (out_file_path):
+        out = cv2.VideoWriter(out_file_path, CODEC, 30, (width, height))
 
     try:
         while cap.isOpened():
@@ -72,27 +81,36 @@ def main(args):
                 break
             
             # Detect face
-            face_image, face_coords = face_detection.predict(frame)
+            face_coords = face_detection.predict(frame)
+            face_coords_0 = face_coords[0]
+            face_image = frame[face_coords_0[1]:face_coords_0[3], face_coords_0[0]:face_coords_0[2]]
 
             # Detect eyes on face
             eyes_coords = facial_landmarks.predict(face_image)
 
+            # Detect head pose angles
+            head_pose_angles = head_pose.predict(face_image)
+            print(head_pose_angles)
+
             # Draw face bounds
-            draw_rectangle(frame, face_coords[0], face_coords[1], face_coords[2], face_coords[3])
+            draw_rectangle(frame, face_coords_0[0], face_coords_0[1], face_coords_0[2], face_coords_0[3])
 
             # Draw eyes bounds
-            draw_circle(frame, eyes_coords["left"]["x"] + face_coords[0], eyes_coords["left"]["y"] + face_coords[1])
-            draw_circle(frame, eyes_coords["right"]["x"] + face_coords[0], eyes_coords["right"]["y"] + face_coords[1])
+            draw_circle(frame, eyes_coords["left"]["x"] + face_coords_0[0], eyes_coords["left"]["y"] + face_coords_0[1])
+            draw_circle(frame, eyes_coords["right"]["x"] + face_coords_0[0], eyes_coords["right"]["y"] + face_coords_0[1])
 
             # File output
-            out.write(frame)
+            if (out_file_path):
+                out.write(frame)
 
             # Stdout output
-            sys.stdout.buffer.write(frame)
-            sys.stdout.flush()
+            if (is_streaming):
+                sys.stdout.buffer.write(frame)
+                sys.stdout.flush()
 
         cap.release()
-        out.release()
+        if (out_file_path):
+            out.release()
         cv2.destroyAllWindows()
     except Exception as e:
         print("Could not run Inference: ", e)
@@ -101,6 +119,7 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--model_face_detection', required=True)
     parser.add_argument('--model_facial_landmarks', required=True)
+    parser.add_argument('--model_head_pose_estimation', required=True)
     parser.add_argument('--device', default='CPU')
     parser.add_argument('--video', default=None)
     parser.add_argument('--queue_param', default=None)
@@ -108,6 +127,8 @@ if __name__=='__main__':
     parser.add_argument('--max_people', default=2)
     parser.add_argument('--threshold', default=0.60)
     parser.add_argument('--extensions', default=None)
+    parser.add_argument('--stream', default=False)
+    parser.add_argument('--out', default=None)
     
     args=parser.parse_args()
 

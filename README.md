@@ -26,14 +26,23 @@ python3 -m pip install -r requirements.txt
 
 ## Demo
 
-### Run
+### Run ffmpeg to monitor output
+
+```
+sudo ffserver -f ./ffmpeg/server.conf
+```
+
+### Run app and redirect stout to ffmpeg server
 
 ```python
 
 python3 src/main.py --model_face_detection models/intel/face-detection-adas-binary-0001/FP32-INT1/face-detection-adas-binary-0001 \
                     --model_facial_landmarks models/intel/landmarks-regression-retail-0009/FP32/landmarks-regression-retail-0009 \
+                    --model_head_pose_estimation models/intel/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001 \
                     --device CPU \
                     --video bin/demo.mp4 \
+                    --out out.mp4 \
+                    --stream true \
 | ffmpeg \
   -v warning \
   -f rawvideo \

@@ -53,10 +53,8 @@ class ModelFaceDetection:
             result = self.exec_network.requests[0].outputs[self.output_name]
 
         coords = self.preprocess_output(result)
-        face_coords_0 = coords[0]
-        face_image = image[face_cords_0[1]:face_cords_0[3], face_cords_0[0]:face_cords_0[2]]
 
-        return face_image, face_coords_0
+        return coords
 
     def check_model(self):
         '''
