@@ -13,6 +13,25 @@ import cv2
 import argparse
 import sys
 
+def draw_circle(frame, x, y):
+    cv2.circle(
+            img=frame, 
+            center=(int(x), int(y)), 
+            radius=10, 
+            color=(0,0,255), 
+            thickness=5
+            )
+    return frame
+
+def draw_rectangle(frame, x1, y1, x2, y2):
+    cv2.rectangle(
+                    frame, 
+                    (int(x1), int(y1)), 
+                    (int(x2), int(y2)), 
+                    (0,0,255), 
+                    3
+                    )
+
 def main(args):
     model_face_detection = args.model_face_detection
     model_facial_landmarks = args.model_facial_landmarks
@@ -27,6 +46,14 @@ def main(args):
     facial_landmarks = ModelFacialLandmarksDetection(model_facial_landmarks, device, extensions)
     facial_landmarks.load_model()
 
+    if sys.platform == "linux" or sys.platform == "linux2":
+        CODEC = 0x7634706d
+    elif sys.platform == "darwin":
+        CODEC = cv2.VideoWriter_fourcc('M','J','P','G')
+    else:
+        print("Unsupported OS.")
+        exit(1)
+
     try:
         cap=cv2.VideoCapture(video_file)
     except FileNotFoundError:
@@ -34,19 +61,38 @@ def main(args):
     except Exception as e:
         print("Something else went wrong with the video file: ", e)
 
+    width = int(cap.get(3))
+    height = int(cap.get(4))
+    out = cv2.VideoWriter('out.mp4', CODEC, 30, (width, height))
+
     try:
         while cap.isOpened():
             ret, frame=cap.read()
             if not ret:
                 break
             
-            face_coords = face_detection.predict(frame)
-            print(face_coords)
+            # Detect face
+            face_image, face_coords = face_detection.predict(frame)
 
-            eyes_coords = facial_landmarks.predict(frame)
-            print(eyes_coords)
+            # Detect eyes on face
+            eyes_coords = facial_landmarks.predict(face_image)
+
+            # Draw face bounds
+            draw_rectangle(frame, face_coords[0], face_coords[1], face_coords[2], face_coords[3])
+
+            # Draw eyes bounds
+            draw_circle(frame, eyes_coords["left"]["x"] + face_coords[0], eyes_coords["left"]["y"] + face_coords[1])
+            draw_circle(frame, eyes_coords["right"]["x"] + face_coords[0], eyes_coords["right"]["y"] + face_coords[1])
+
+            # File output
+            out.write(frame)
+
+            # Stdout output
+            sys.stdout.buffer.write(frame)
+            sys.stdout.flush()
 
         cap.release()
+        out.release()
         cv2.destroyAllWindows()
     except Exception as e:
         print("Could not run Inference: ", e)

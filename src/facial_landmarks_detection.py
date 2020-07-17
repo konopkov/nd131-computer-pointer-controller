@@ -84,6 +84,7 @@ class ModelFacialLandmarksDetection:
         values for five landmarks coordinates in the form (x0, y0, x1, y1, ..., x5, y5). All the 
         coordinates are normalized to be in range [0,1].
         '''
+        
         coords = {
             "left": {
                 "x": outputs[0][0][0] * self.width,

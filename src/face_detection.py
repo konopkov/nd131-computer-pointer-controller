@@ -53,8 +53,10 @@ class ModelFaceDetection:
             result = self.exec_network.requests[0].outputs[self.output_name]
 
         coords = self.preprocess_output(result)
-        
-        return coords
+        face_coords_0 = coords[0]
+        face_image = image[face_cords_0[1]:face_cords_0[3], face_cords_0[0]:face_cords_0[2]]
+
+        return face_image, face_coords_0
 
     def check_model(self):
         '''
@@ -86,18 +88,22 @@ class ModelFaceDetection:
         (x_min, y_min) - coordinates of the top left bounding box corner
         (x_max, y_max) - coordinates of the bottom right bounding box corner.
         '''
-        coords = []
-        for out in outputs[0][0]:
+
+        squeezed_outputs = np.squeeze(outputs)
+        results = []
+
+        for out in squeezed_outputs:
             # out[2] -> confidence
             if (out[2] >= self.threshold):
-                coords.append((
-                    # x_1
-                    out[3] * self.width,
-                    # y_1
-                    out[4] * self.height,
-                    # x_2
-                    out[5] * self.width,
-                    # y_2
-                    out[6] * self.height
-                    ))
-        return coords
+                # x_1
+                x_1 = int(out[3] * self.width)
+                # y_1
+                y_1 = int(out[4] * self.height)
+                # x_2
+                x_2 = int(out[5] * self.width)
+                # y_2
+                y_2 = int(out[6] * self.height)
+            
+            results.append([x_1, y_1, x_2, y_2])
+        
+        return results

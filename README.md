@@ -26,14 +26,28 @@ python3 -m pip install -r requirements.txt
 
 ## Demo
 
+### Run
+
 ```python
 
 python3 src/main.py --model_face_detection models/intel/face-detection-adas-binary-0001/FP32-INT1/face-detection-adas-binary-0001 \
                     --model_facial_landmarks models/intel/landmarks-regression-retail-0009/FP32/landmarks-regression-retail-0009 \
                     --device CPU \
-                    --video bin/demo.mp4
+                    --video bin/demo.mp4 \
+| ffmpeg \
+  -v warning \
+  -f rawvideo \
+  -pixel_format bgr24 \
+  -video_size 1920*1080 \
+  -framerate 24 \
+  -i - http://0.0.0.0:3004/fac.ffm
 
 ```
+
+### Get output video
+
+- [http://localhost:3004/facstream.mjpeg](http://localhost:3004/facstream.mjpeg)
+- [ouptput.mp4]()
 
 ## Documentation
 
