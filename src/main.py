@@ -25,12 +25,23 @@ def draw_circle(frame, x, y):
 
 def draw_rectangle(frame, x1, y1, x2, y2):
     cv2.rectangle(
-                    frame, 
-                    (int(x1), int(y1)), 
-                    (int(x2), int(y2)), 
-                    (0,0,255), 
-                    3
+                    img=frame, 
+                    pt1 = (int(x1), int(y1)), 
+                    pt2 = (int(x2), int(y2)), 
+                    color = (0,0,255), 
+                    thickness = 3
                     )
+    return frame
+
+def draw_arrowed_line(frame, x1, y1, x2, y2):
+    cv2.arrowedLine(
+                        img=frame, 
+                        pt1 = (int(x1), int(y1)),
+                        pt2 = (int(x2), int(y2)),
+                        color = (255,0,0), 
+                        thickness = 2
+                        )
+    return frame
 
 def main(args):
     model_face_detection = args.model_face_detection
@@ -66,7 +77,10 @@ def main(args):
             exit(1)
 
     try:
-        cap=cv2.VideoCapture(video_file)
+        if (video_file == "cam"):
+            cap=cv2.VideoCapture(0)
+        else:
+            cap=cv2.VideoCapture(video_file)
     except FileNotFoundError:
         print("Cannot locate video file: "+ video_file)
     except Exception as e:
@@ -111,7 +125,6 @@ def main(args):
             # Detect gaze vector
             head_pose_angles_normalized = [head_pose_angles["angle_y_fc"], head_pose_angles["angle_p_fc"], head_pose_angles["angle_r_fc"]]
             gaze_vector = gaze_estimation.predict(left_eye_image, right_eye_image, head_pose_angles_normalized)
-            print(gaze_vector)
 
             # Draw face bounds
             draw_rectangle(frame, face_coords_0[0], face_coords_0[1], face_coords_0[2], face_coords_0[3])
@@ -120,6 +133,24 @@ def main(args):
             draw_circle(frame, eyes_coords["left"]["x"] + face_coords_0[0], eyes_coords["left"]["y"] + face_coords_0[1])
             draw_circle(frame, eyes_coords["right"]["x"] + face_coords_0[0], eyes_coords["right"]["y"] + face_coords_0[1])
 
+            ## Draw eyes vectors
+            x, y = gaze_vector[0][0:2]
+
+            draw_arrowed_line(
+                                frame, 
+                                eyes_coords["left"]["x"] + face_coords_0[0],
+                                eyes_coords["left"]["y"] + face_coords_0[1],
+                                eyes_coords["left"]["x"] + x * 200 + face_coords_0[0],
+                                eyes_coords["left"]["y"] - y * 200 + face_coords_0[1],
+                                )
+
+            draw_arrowed_line(
+                                frame, 
+                                eyes_coords["right"]["x"] + face_coords_0[0],
+                                eyes_coords["right"]["y"] + face_coords_0[1],
+                                eyes_coords["right"]["x"] + x * 200 + face_coords_0[0],
+                                eyes_coords["right"]["y"] - y * 200 + face_coords_0[1],
+                                )
             # File output
             if (out_file_path):
                 out.write(frame)

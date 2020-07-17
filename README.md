@@ -54,6 +54,28 @@ python3 src/main.py --model_face_detection models/intel/face-detection-adas-bina
 
 ```
 
+### Run wth camera
+
+```python
+
+python3 src/main.py --model_face_detection models/intel/face-detection-adas-binary-0001/FP32-INT1/face-detection-adas-binary-0001 \
+                    --model_facial_landmarks models/intel/landmarks-regression-retail-0009/FP32/landmarks-regression-retail-0009 \
+                    --model_head_pose_estimation models/intel/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001 \
+                    --model_gaze_estimation models/intel/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002 \
+                    --device CPU \
+                    --video cam \
+                    --out out.mp4 \
+                    --stream true \
+| ffmpeg \
+  -v warning \
+  -f rawvideo \
+  -pixel_format bgr24 \
+  -video_size 640*480 \
+  -framerate 24 \
+  -i - http://0.0.0.0:3004/fac.ffm
+
+```
+
 ### Get output video
 
 - [http://localhost:3004/facstream.mjpeg](http://localhost:3004/facstream.mjpeg)
