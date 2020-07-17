@@ -4,10 +4,6 @@ import cv2
 import argparse
 import sys
 import numpy as np
-'''
-This is a sample class for a model. You may choose to use it as-is or make any changes to it.
-This has been provided just to give you an idea of how to structure your model class.
-'''
 
 class ModelFaceDetection:
     '''
@@ -81,12 +77,18 @@ class ModelFaceDetection:
 
     def preprocess_output(self, outputs):
         '''
-        Before feeding the output of this model to the next model,
-        you might have to preprocess the output. This function is where you can do that.
+        The net outputs blob with shape: [1, 1, N, 7], where N is the number of detected bounding boxes. 
+        Each detection has the format [image_id, label, conf, x_min, y_min, x_max, y_max], where:
+
+        image_id - ID of the image in the batch
+        label - predicted class ID
+        conf - confidence for the predicted class
+        (x_min, y_min) - coordinates of the top left bounding box corner
+        (x_max, y_max) - coordinates of the bottom right bounding box corner.
         '''
         coords = []
         for out in outputs[0][0]:
-            # out[2] -> probability
+            # out[2] -> confidence
             if (out[2] >= self.threshold):
                 coords.append((
                     # x_1
@@ -95,7 +97,7 @@ class ModelFaceDetection:
                     out[4] * self.height,
                     # x_2
                     out[5] * self.width,
-                    # 4_2
+                    # y_2
                     out[6] * self.height
                     ))
         return coords

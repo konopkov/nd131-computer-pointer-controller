@@ -28,9 +28,10 @@ python3 -m pip install -r requirements.txt
 
 ```python
 
-python3 src/main.py  --model_name models/intel/face-detection-adas-binary-0001/FP32-INT1/face-detection-adas-binary-0001 \
-                          --device CPU \
-                          --video bin/demo.mp4
+python3 src/main.py --model_face_detection models/intel/face-detection-adas-binary-0001/FP32-INT1/face-detection-adas-binary-0001 \
+                    --model_facial_landmarks models/intel/landmarks-regression-retail-0009/FP32/landmarks-regression-retail-0009 \
+                    --device CPU \
+                    --video bin/demo.mp4
 
 ```
 
