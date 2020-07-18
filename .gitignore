@@ -1,3 +1,6 @@
 *.pyc
 out.mp4
 fac.ffm
+bin
+lib
+include

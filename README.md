@@ -9,18 +9,20 @@ _TODO:_ Explain the setup procedures to run your project. For instance, this can
 ### Downloading models
 
 ```
-python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name face-detection-adas-binary-0001 --output_dir '/media/psf/submissons/nd131-computer-pointer-controller/models'
+python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name face-detection-adas-binary-0001 --output_dir 'nd131-computer-pointer-controller/models'
 
-python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name head-pose-estimation-adas-0001 --output_dir '/media/psf/submissons/nd131-computer-pointer-controller/models'
+python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name head-pose-estimation-adas-0001 --output_dir 'nd131-computer-pointer-controller/models'
 
-python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name landmarks-regression-retail-0009 --output_dir '/media/psf/submissons/nd131-computer-pointer-controller/models'
+python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name landmarks-regression-retail-0009 --output_dir 'nd131-computer-pointer-controller/models'
 
-python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name gaze-estimation-adas-0002 --output_dir '/media/psf/submissons/nd131-computer-pointer-controller/models'
+python3 /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name gaze-estimation-adas-0002 --output_dir '/nd131-computer-pointer-controller/models'
 ```
 
-### Installing dependencies
+### Activate virtualenv and install dependencies
 
 ```
+virtualenv nd131-computer-pointer-controller
+source nd131-computer-pointer-controller/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
