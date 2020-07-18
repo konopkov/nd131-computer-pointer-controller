@@ -56,6 +56,7 @@ def format_stats(stats):
     | Facial Landmarks      | {fl_t:.4g} ms            | {fl_fps:.4g}    |
     | Head Pose Estimation  | {hp_t:.4g} ms            | {hp_fps:.4g}    |
     | Gaze Estimation       | {ge_t:.4g} ms            | {ge_fps:.4g}    |
+    | Total                 | {tt_t:.4g} ms            | {tt_fps:.4g}    |
     ==========================================================
     '''.format(
         fd_t = stats["face_detection"]["average_infer_duration"] * 1000,
@@ -66,6 +67,8 @@ def format_stats(stats):
         hp_fps = 1.0 / stats["head_pose_estimation"]["average_infer_duration"],
         ge_t = stats["gaze_estimation"]["average_infer_duration"] * 1000,
         ge_fps = 1.0 / stats["gaze_estimation"]["average_infer_duration"],
+        tt_t = stats["total"]["average_infer_duration"] * 1000,
+        tt_fps = 1.0 / stats["total"]["average_infer_duration"],
     )
 
     return stats_string
@@ -80,6 +83,7 @@ def main(args):
     threshold = float(args.threshold)
     extensions = args.extensions
     is_streaming = bool(args.stream)
+    is_visualize = bool(args.visualize)
     out_file_path = args.out
     cursor_precision = args.cursor_precision
     cursor_speed = args.cursor_speed
@@ -101,6 +105,11 @@ def main(args):
                 "average_infer_duration": 0
             },
             "gaze_estimation": {
+                "start_time": 0,
+                "accum_infer_time": 0,
+                "average_infer_duration": 0
+            },
+            "total": {
                 "start_time": 0,
                 "accum_infer_time": 0,
                 "average_infer_duration": 0
@@ -177,6 +186,7 @@ def main(args):
             try:
                 # Update stats
                 update_stats(stats, "new_frame")
+                update_stats(stats, "infer_start", "total")
 
                 # Detect face
                 update_stats(stats, "infer_start", "face_detection")
@@ -218,44 +228,46 @@ def main(args):
                     update_stats(stats, "infer_start", "gaze_estimation")
                     gaze_vector = gaze_estimation.predict(left_eye_image, right_eye_image, head_pose_angles_normalized)
                     update_stats(stats, "infer_end", "gaze_estimation")
-
-                    # Draw face bounds
-                    draw_rectangle(frame, face_coords_0[0], face_coords_0[1], face_coords_0[2], face_coords_0[3])
-
-                    # Draw eyes bounds
-                    draw_rectangle(
-                        frame, 
-                        left_eye_x1 + face_coords_0[0], 
-                        left_eye_y1 + face_coords_0[1],
-                        left_eye_x2 + face_coords_0[0], 
-                        left_eye_y2 + face_coords_0[1]
-                        )
-                    draw_rectangle(
-                        frame, 
-                        right_eye_x1 + face_coords_0[0], 
-                        right_eye_y1 + face_coords_0[1],
-                        right_eye_x2 + face_coords_0[0], 
-                        right_eye_y2 + face_coords_0[1]
-                        )
-
-                    # Draw eyes vectors
                     x, y = gaze_vector[0][0:2]
 
-                    draw_arrowed_line(
-                                        frame, 
-                                        eyes_coords["left"]["x"] + face_coords_0[0],
-                                        eyes_coords["left"]["y"] + face_coords_0[1],
-                                        eyes_coords["left"]["x"] + x * 200 + face_coords_0[0],
-                                        eyes_coords["left"]["y"] - y * 200 + face_coords_0[1],
-                                        )
+                    update_stats(stats, "infer_end", "total")
 
-                    draw_arrowed_line(
-                                        frame, 
-                                        eyes_coords["right"]["x"] + face_coords_0[0],
-                                        eyes_coords["right"]["y"] + face_coords_0[1],
-                                        eyes_coords["right"]["x"] + x * 200 + face_coords_0[0],
-                                        eyes_coords["right"]["y"] - y * 200 + face_coords_0[1],
-                                        )
+                    if (is_visualize):
+                        # Draw face bounds
+                        draw_rectangle(frame, face_coords_0[0], face_coords_0[1], face_coords_0[2], face_coords_0[3])
+
+                        # Draw eyes bounds
+                        draw_rectangle(
+                            frame, 
+                            left_eye_x1 + face_coords_0[0], 
+                            left_eye_y1 + face_coords_0[1],
+                            left_eye_x2 + face_coords_0[0], 
+                            left_eye_y2 + face_coords_0[1]
+                            )
+                        draw_rectangle(
+                            frame, 
+                            right_eye_x1 + face_coords_0[0], 
+                            right_eye_y1 + face_coords_0[1],
+                            right_eye_x2 + face_coords_0[0], 
+                            right_eye_y2 + face_coords_0[1]
+                            )
+
+                        # Draw eyes vectors
+                        draw_arrowed_line(
+                                            frame, 
+                                            eyes_coords["left"]["x"] + face_coords_0[0],
+                                            eyes_coords["left"]["y"] + face_coords_0[1],
+                                            eyes_coords["left"]["x"] + x * 200 + face_coords_0[0],
+                                            eyes_coords["left"]["y"] - y * 200 + face_coords_0[1],
+                                            )
+
+                        draw_arrowed_line(
+                                            frame, 
+                                            eyes_coords["right"]["x"] + face_coords_0[0],
+                                            eyes_coords["right"]["y"] + face_coords_0[1],
+                                            eyes_coords["right"]["x"] + x * 200 + face_coords_0[0],
+                                            eyes_coords["right"]["y"] - y * 200 + face_coords_0[1],
+                                            )
 
                     # Move cursor
                     mouse_controller.move(x, y)
@@ -290,15 +302,13 @@ if __name__=='__main__':
     parser.add_argument('--model_gaze_estimation', required=True)
     parser.add_argument('--device', default='CPU')
     parser.add_argument('--video', default=None)
-    parser.add_argument('--queue_param', default=None)
-    parser.add_argument('--output_path', default='/results')
-    parser.add_argument('--max_people', default=2)
     parser.add_argument('--threshold', default=0.5)
     parser.add_argument('--extensions', default=None)
     parser.add_argument('--stream', default=False)
     parser.add_argument('--out', default=None)
     parser.add_argument('--cursor_precision', default='medium')
     parser.add_argument('--cursor_speed', default='medium')
+    parser.add_argument('--visualize', default=False)
     
     args=parser.parse_args()
 

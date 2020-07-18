@@ -5,3 +5,4 @@ bin
 lib
 include
 log.txt
+.DS_Store

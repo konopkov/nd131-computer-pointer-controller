@@ -1,10 +1,19 @@
 # Computer Pointer Controller
 
-_TODO:_ Write a short introduction to your project
+Project is an example of usage of OpenVINO™ Toolkit to execute inference pipeine to analyze eye gaze direction and move computer poiner accordingly. Models in pipeline:
+
+- [Face Detection Model](https://docs.openvinotoolkit.org/latest/_models_intel_face_detection_adas_binary_0001_description_face_detection_adas_binary_0001.html)
+- [Face Landmarks Detection Model](https://docs.openvinotoolkit.org/latest/_models_intel_landmarks_regression_retail_0009_description_landmarks_regression_retail_0009.html)
+- [Head Pose Estimation Model](https://docs.openvinotoolkit.org/latest/_models_intel_head_pose_estimation_adas_0001_description_head_pose_estimation_adas_0001.html)
+- [Gaze Estimation](https://docs.openvinotoolkit.org/latest/_models_intel_gaze_estimation_adas_0002_description_gaze_estimation_adas_0002.html)
+
+![pipeline](images/pipeline.png)
 
 ## Project Set Up and Installation
 
-_TODO:_ Explain the setup procedures to run your project. For instance, this can include your project directory structure, the models you need to download and where to place them etc. Also include details about how to install the dependencies your project requires.
+### OpenVINO™
+
+Install [OpenVINO™ Toolkit](https://docs.openvinotoolkit.org/latest/)
 
 ### Downloading models
 
@@ -28,6 +37,8 @@ python3 -m pip install -r requirements.txt
 
 ## Demo
 
+![demo](images/demo.png)
+
 ### Run ffmpeg to monitor output
 
 ```
@@ -44,6 +55,7 @@ python3 src/main.py --model_face_detection models/intel/face-detection-adas-bina
                     --model_gaze_estimation models/intel/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002 \
                     --device CPU \
                     --threshold 0.5 \
+                    --visualize True \
                     --cursor_precision low \
                     --cursor_speed fast \
                     --video bin/demo.mp4 \
@@ -68,6 +80,7 @@ python3 src/main.py --model_face_detection models/intel/face-detection-adas-bina
                     --model_gaze_estimation models/intel/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002 \
                     --device CPU \
                     --threshold 0.5 \
+                    --visualize True \
                     --cursor_precision low \
                     --cursor_speed fast \
                     --video cam \
@@ -89,24 +102,54 @@ python3 src/main.py --model_face_detection models/intel/face-detection-adas-bina
 
 ## Documentation
 
-_TODO:_ Include any documentation that users might need to better understand your project code. For instance, this is a good place to explain the command line arguments that your project supports.
+### Command line arguments
+
+| Parameter                    | Default value | Meaning                                               |
+| ---------------------------- | ------------- | ----------------------------------------------------- |
+| --model_face_detection       |               | Path to Face detection model                          |
+| --model_facial_landmarks     |               | Path to Facial landmarks detection model              |
+| --model_head_pose_estimation |               | Path to Head pose estimation model                    |
+| --model_gaze_estimation      |               | Path to Gaze estimation model                         |
+| --device                     | CPU           | Device to use as inference acceleratir                |
+| --video                      |               | Path to video file (or "cam" to use web camera input) |
+| --threshold                  | 0.5           | Preceision threshols                                  |
+| --extensions                 |               | OpenVINI extension to load                            |
+| --stream                     | False         | Stream output frames to stdout                        |
+| --out                        |               | Output file path                                      |
+| --cursor_precision           | medium        | Cursor movement precision                             |
+| --cursor_speed               | medium        | Cursor movement speed                                 |
+| --visualize                  | False         | Visualize output of intermidiate models               |
 
 ## Benchmarks
 
-_TODO:_ Include the benchmark results of running your model on multiple hardwares and multiple model precisions. Your benchmarks can include: model loading time, input/output processing time, model inference time etc.
+Model with the lower precision (INT8) gives the best performance results. However, the most expensive inference is face detection (where the full sized frame is analyzed). Unfortunately, `face-detection-adas-binary-0001` is present in Open ModelZoo only in precision `FP32`. Model quantanization with DL Workbench can give an additional performance boost.
 
-## Results
+### FP32
 
-_TODO:_ Discuss the benchmark results and explain why you are getting the results you are getting. For instance, explain why there is difference in inference time for FP32, FP16 and INT8 models.
+| Model                | Avg inference time | Avg FPS |
+| -------------------- | ------------------ | ------- |
+| Face Detection       | 22.19 ms           | 45.06   |
+| Facial Landmarks     | 0.9142 ms          | 1094    |
+| Head Pose Estimation | 2.151 ms           | 465     |
+| Gaze Estimation      | 2.205 ms           | 453.6   |
+| Total                | 24.97 ms           | 40.05   |
 
-## Stand Out Suggestions
+### FP16
 
-This is where you can provide information about the stand out suggestions that you have attempted.
+| Model                | Avg inference time | Avg FPS |
+| -------------------- | ------------------ | ------- |
+| Face Detection       | 21.96 ms           | 45.54   |
+| Facial Landmarks     | 0.9249 ms          | 1081    |
+| Head Pose Estimation | 2.043 ms           | 489.6   |
+| Gaze Estimation      | 2.225 ms           | 449.4   |
+| Total                | 24.62 ms           | 40.62   |
 
-### Async Inference
+### FP32-INT8
 
-If you have used Async Inference in your code, benchmark the results and explain its effects on power and performance of your project.
-
-### Edge Cases
-
-There will be certain situations that will break your inference flow. For instance, lighting changes or multiple people in the frame. Explain some of the edge cases you encountered in your project and how you solved them to make your project more robust.
+| Model                | Avg inference time | Avg FPS |
+| -------------------- | ------------------ | ------- |
+| Face Detection       | 22.64 ms           | 44.17   |
+| Facial Landmarks     | 0.9127 ms          | 1096    |
+| Head Pose Estimation | 1.96 ms            | 510.1   |
+| Gaze Estimation      | 1.837 ms           | 544.4   |
+| Total                | 25.01 ms           | 39.99   |
