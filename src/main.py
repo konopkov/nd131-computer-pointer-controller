@@ -34,6 +34,42 @@ def draw_arrowed_line(frame, x1, y1, x2, y2):
                         )
     return frame
 
+def update_stats(stats, event, model_name=None):
+    if (event == "infer_start"):
+        stats[model_name]["start_time"] = time.time()
+
+    elif (event == "infer_end"):
+        stats[model_name]["accum_infer_time"] += (time.time() - stats[model_name]["start_time"])
+        stats[model_name]["start_time"] = 0
+        stats[model_name]["average_infer_duration"] = stats[model_name]["accum_infer_time"] / stats["frames_counter"]
+
+    elif (event == "new_frame"):
+        stats["frames_counter"] += 1
+    return stats
+
+def format_stats(stats):
+    stats_string = '''
+    ==========================================================
+    | Model                 | Avg inference time  | Avg FPS  |
+    |-----------------------|---------------------|----------|
+    | Face Detection        | {fd_t:.4g} ms            | {fd_fps:.4g}    |
+    | Facial Landmarks      | {fl_t:.4g} ms            | {fl_fps:.4g}    |
+    | Head Pose Estimation  | {hp_t:.4g} ms            | {hp_fps:.4g}    |
+    | Gaze Estimation       | {ge_t:.4g} ms            | {ge_fps:.4g}    |
+    ==========================================================
+    '''.format(
+        fd_t = stats["face_detection"]["average_infer_duration"] * 1000,
+        fd_fps = 1.0 / stats["face_detection"]["average_infer_duration"],
+        fl_t = stats["facial_landmarks"]["average_infer_duration"] * 1000,
+        fl_fps = 1.0 / stats["facial_landmarks"]["average_infer_duration"],
+        hp_t = stats["head_pose_estimation"]["average_infer_duration"] * 1000,
+        hp_fps = 1.0 / stats["head_pose_estimation"]["average_infer_duration"],
+        ge_t = stats["gaze_estimation"]["average_infer_duration"] * 1000,
+        ge_fps = 1.0 / stats["gaze_estimation"]["average_infer_duration"],
+    )
+
+    return stats_string
+
 def main(args):
     model_face_detection = args.model_face_detection
     model_facial_landmarks = args.model_facial_landmarks
@@ -48,6 +84,30 @@ def main(args):
     cursor_precision = args.cursor_precision
     cursor_speed = args.cursor_speed
 
+    stats = {
+            "face_detection": {
+                "start_time": 0,
+                "accum_infer_time": 0,
+                "average_infer_duration": 0
+            },
+            "facial_landmarks": {
+                "start_time": 0,
+                "accum_infer_time": 0,
+                "average_infer_duration": 0
+            },
+            "head_pose_estimation": {
+                "start_time": 0,
+                "accum_infer_time": 0,
+                "average_infer_duration": 0
+            },
+            "gaze_estimation": {
+                "start_time": 0,
+                "accum_infer_time": 0,
+                "average_infer_duration": 0
+            },
+            "frames_counter": 0
+        }
+
     try:
         logging.basicConfig(
             level=logging.INFO,
@@ -61,22 +121,22 @@ def main(args):
 
     logging.info("Application started")
 
-    logging.info("Loading ModelFaceDetection")
+    logging.info("Loading ModelFaceDetection {model_path}".format(model_path=model_face_detection))
     face_detection = ModelFaceDetection(model_face_detection, device, threshold, extensions)
     face_detection.load_model()
     logging.info("Loaded ModelFaceDetection")
 
-    logging.info("Loading ModelFacialLandmarksDetectionl")
+    logging.info("Loading ModelFacialLandmarksDetectionl {model_path}".format(model_path=model_facial_landmarks))
     facial_landmarks = ModelFacialLandmarksDetection(model_facial_landmarks, device, threshold, extensions)
     facial_landmarks.load_model()
     logging.info("Loaded ModelFacialLandmarksDetectionl")
 
-    logging.info("Loading ModelHeadPoseEstimation")
+    logging.info("Loading ModelHeadPoseEstimation {model_path}".format(model_path=model_head_pose_estimation))
     head_pose = ModelHeadPoseEstimation(model_head_pose_estimation, device, threshold, extensions)
     head_pose.load_model()
     logging.info("Loaded ModelFacialLandmarksDetectionl")
 
-    logging.info("Loading ModelGazeEstimation")
+    logging.info("Loading ModelGazeEstimation {model_path}".format(model_path=model_gaze_estimation))
     gaze_estimation = ModelGazeEstimation(model_gaze_estimation, device, threshold, extensions)
     gaze_estimation.load_model()
     logging.info("Loaded ModelFacialLandmarksDetectionl")
@@ -115,8 +175,13 @@ def main(args):
                 break
             
             try:
+                # Update stats
+                update_stats(stats, "new_frame")
+
                 # Detect face
+                update_stats(stats, "infer_start", "face_detection")
                 face_coords = face_detection.predict(frame)
+                update_stats(stats, "infer_end", "face_detection")
                 
                 # If at least one face detected
                 if (len(face_coords) > 0):
@@ -125,7 +190,9 @@ def main(args):
                     face_image = frame[face_coords_0[1]:face_coords_0[3], face_coords_0[0]:face_coords_0[2]]
 
                     # Detect eyes on face
+                    update_stats(stats, "infer_start", "facial_landmarks")
                     eyes_coords = facial_landmarks.predict(face_image)
+                    update_stats(stats, "infer_end", "facial_landmarks")
 
                     left_eye_x1 = int(eyes_coords["left"]["x"]) - 30
                     left_eye_x2 = int(eyes_coords["left"]["x"]) + 30
@@ -141,11 +208,16 @@ def main(args):
                     right_eye_image = face_image[right_eye_x1:right_eye_x2, right_eye_y1:right_eye_y2]
 
                     # Detect head pose angles
+                    update_stats(stats, "infer_start", "head_pose_estimation")
                     head_pose_angles = head_pose.predict(face_image)
+                    update_stats(stats, "infer_end", "head_pose_estimation")
 
                     # Detect gaze vector
                     head_pose_angles_normalized = [head_pose_angles["angle_y_fc"], head_pose_angles["angle_p_fc"], head_pose_angles["angle_r_fc"]]
+                    
+                    update_stats(stats, "infer_start", "gaze_estimation")
                     gaze_vector = gaze_estimation.predict(left_eye_image, right_eye_image, head_pose_angles_normalized)
+                    update_stats(stats, "infer_end", "gaze_estimation")
 
                     # Draw face bounds
                     draw_rectangle(frame, face_coords_0[0], face_coords_0[1], face_coords_0[2], face_coords_0[3])
@@ -187,8 +259,8 @@ def main(args):
 
                     # Move cursor
                     mouse_controller.move(x, y)
-            except:
-                pass
+            except Exception as e:
+                logging.error("Error during pipeline execution: {e}".format(e=e))
 
             # File output
             if (out_file_path):
@@ -199,6 +271,10 @@ def main(args):
                 sys.stdout.buffer.write(frame)
                 sys.stdout.flush()
 
+        # Save stats
+        logging.info(format_stats(stats))
+
+        # Release resources
         cap.release()
         if (out_file_path):
             out.release()
