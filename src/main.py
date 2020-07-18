@@ -54,6 +54,8 @@ def main(args):
     extensions = args.extensions
     is_streaming = bool(args.stream)
     out_file_path = args.out
+    cursor_precision = args.cursor_precision
+    cursor_speed = args.cursor_speed
 
     face_detection = ModelFaceDetection(model_face_detection, device, extensions)
     face_detection.load_model()
@@ -66,6 +68,8 @@ def main(args):
 
     gaze_estimation = ModelGazeEstimation(model_gaze_estimation, device, extensions)
     gaze_estimation.load_model()
+
+    mouse_controller = MouseController(cursor_precision, cursor_speed)
 
     if (out_file_path):
         if sys.platform == "linux" or sys.platform == "linux2":
@@ -133,7 +137,7 @@ def main(args):
             draw_circle(frame, eyes_coords["left"]["x"] + face_coords_0[0], eyes_coords["left"]["y"] + face_coords_0[1])
             draw_circle(frame, eyes_coords["right"]["x"] + face_coords_0[0], eyes_coords["right"]["y"] + face_coords_0[1])
 
-            ## Draw eyes vectors
+            # Draw eyes vectors
             x, y = gaze_vector[0][0:2]
 
             draw_arrowed_line(
@@ -151,6 +155,10 @@ def main(args):
                                 eyes_coords["right"]["x"] + x * 200 + face_coords_0[0],
                                 eyes_coords["right"]["y"] - y * 200 + face_coords_0[1],
                                 )
+
+            # Move cursor
+            mouse_controller.move(x, y)
+
             # File output
             if (out_file_path):
                 out.write(frame)
@@ -182,6 +190,8 @@ if __name__=='__main__':
     parser.add_argument('--extensions', default=None)
     parser.add_argument('--stream', default=False)
     parser.add_argument('--out', default=None)
+    parser.add_argument('--cursor_precision', default='medium')
+    parser.add_argument('--cursor_speed', default='medium')
     
     args=parser.parse_args()
 
