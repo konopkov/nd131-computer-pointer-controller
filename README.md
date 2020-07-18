@@ -41,6 +41,7 @@ python3 src/main.py --model_face_detection models/intel/face-detection-adas-bina
                     --model_head_pose_estimation models/intel/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001 \
                     --model_gaze_estimation models/intel/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002 \
                     --device CPU \
+                    --threshold 0.5 \
                     --cursor_precision low \
                     --cursor_speed fast \
                     --video bin/demo.mp4 \
@@ -64,6 +65,9 @@ python3 src/main.py --model_face_detection models/intel/face-detection-adas-bina
                     --model_head_pose_estimation models/intel/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001 \
                     --model_gaze_estimation models/intel/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002 \
                     --device CPU \
+                    --threshold 0.5 \
+                    --cursor_precision low \
+                    --cursor_speed fast \
                     --video cam \
                     --stream true \
 | ffmpeg \

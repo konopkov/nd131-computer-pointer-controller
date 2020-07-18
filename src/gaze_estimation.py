@@ -9,14 +9,14 @@ class ModelGazeEstimation:
     '''
     Class for the Gaze Estimation Model.
     '''
-    def __init__(self, model_name, device='CPU', extensions=None):
+    def __init__(self, model_name, device='CPU', threshold=0.5, extensions=None):
         '''
         Initializing class instance
         '''
-        self.model_weights=model_name+'.bin'
-        self.model_structure=model_name+'.xml'
-        self.device=device
-        self.threshold = 0.5
+        self.model_weights = model_name+'.bin'
+        self.model_structure = model_name+'.xml'
+        self.device = device
+        self.threshold = threshold
         self.extensions = extensions
 
     def load_model(self):

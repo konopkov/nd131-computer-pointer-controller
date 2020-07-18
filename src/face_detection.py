@@ -9,11 +9,14 @@ class ModelFaceDetection:
     '''
     Class for the Face Detection Model.
     '''
-    def __init__(self, model_name, device='CPU', extensions=None):
-        self.model_weights=model_name+'.bin'
-        self.model_structure=model_name+'.xml'
-        self.device=device
-        self.threshold = 0.5
+    def __init__(self, model_name, device='CPU', threshold=0.5, extensions=None):
+        '''
+        Initializing class instance
+        '''
+        self.model_weights = model_name+'.bin'
+        self.model_structure = model_name+'.xml'
+        self.device = device
+        self.threshold = threshold
         self.extensions = extensions
 
     def load_model(self):
@@ -102,6 +105,6 @@ class ModelFaceDetection:
                 # y_2
                 y_2 = int(out[6] * self.height)
             
-            results.append([x_1, y_1, x_2, y_2])
+                results.append([x_1, y_1, x_2, y_2])
         
         return results
