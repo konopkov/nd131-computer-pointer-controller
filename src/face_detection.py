@@ -4,20 +4,19 @@ import cv2
 import argparse
 import sys
 import numpy as np
-'''
-This is a sample class for a model. You may choose to use it as-is or make any changes to it.
-This has been provided just to give you an idea of how to structure your model class.
-'''
 
 class ModelFaceDetection:
     '''
     Class for the Face Detection Model.
     '''
-    def __init__(self, model_name, device='CPU', extensions=None):
-        self.model_weights=model_name+'.bin'
-        self.model_structure=model_name+'.xml'
-        self.device=device
-        self.threshold = 0.5
+    def __init__(self, model_name, device='CPU', threshold=0.5, extensions=None):
+        '''
+        Initializing class instance
+        '''
+        self.model_weights = model_name+'.bin'
+        self.model_structure = model_name+'.xml'
+        self.device = device
+        self.threshold = threshold
         self.extensions = extensions
 
     def load_model(self):
@@ -57,7 +56,7 @@ class ModelFaceDetection:
             result = self.exec_network.requests[0].outputs[self.output_name]
 
         coords = self.preprocess_output(result)
-        
+
         return coords
 
     def check_model(self):
@@ -81,21 +80,31 @@ class ModelFaceDetection:
 
     def preprocess_output(self, outputs):
         '''
-        Before feeding the output of this model to the next model,
-        you might have to preprocess the output. This function is where you can do that.
+        The net outputs blob with shape: [1, 1, N, 7], where N is the number of detected bounding boxes. 
+        Each detection has the format [image_id, label, conf, x_min, y_min, x_max, y_max], where:
+
+        image_id - ID of the image in the batch
+        label - predicted class ID
+        conf - confidence for the predicted class
+        (x_min, y_min) - coordinates of the top left bounding box corner
+        (x_max, y_max) - coordinates of the bottom right bounding box corner.
         '''
-        coords = []
-        for out in outputs[0][0]:
-            # out[2] -> probability
+
+        squeezed_outputs = np.squeeze(outputs)
+        results = []
+
+        for out in squeezed_outputs:
+            # out[2] -> confidence
             if (out[2] >= self.threshold):
-                coords.append((
-                    # x_1
-                    out[3] * self.width,
-                    # y_1
-                    out[4] * self.height,
-                    # x_2
-                    out[5] * self.width,
-                    # 4_2
-                    out[6] * self.height
-                    ))
-        return coords
+                # x_1
+                x_1 = int(out[3] * self.width)
+                # y_1
+                y_1 = int(out[4] * self.height)
+                # x_2
+                x_2 = int(out[5] * self.width)
+                # y_2
+                y_2 = int(out[6] * self.height)
+            
+                results.append([x_1, y_1, x_2, y_2])
+        
+        return results
