@@ -12,6 +12,7 @@ import os
 import cv2
 import argparse
 import sys
+import logging
 
 def draw_rectangle(frame, x1, y1, x2, y2):
     cv2.rectangle(
@@ -47,17 +48,38 @@ def main(args):
     cursor_precision = args.cursor_precision
     cursor_speed = args.cursor_speed
 
+    try:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            handlers=[
+                logging.FileHandler("log.txt"),
+                logging.StreamHandler()
+            ])
+    except:
+        print("Cannot create log file")
+
+    logging.info("Application started")
+
+    logging.info("Loading ModelFaceDetection")
     face_detection = ModelFaceDetection(model_face_detection, device, threshold, extensions)
     face_detection.load_model()
+    logging.info("Loaded ModelFaceDetection")
 
+    logging.info("Loading ModelFacialLandmarksDetectionl")
     facial_landmarks = ModelFacialLandmarksDetection(model_facial_landmarks, device, threshold, extensions)
     facial_landmarks.load_model()
+    logging.info("Loaded ModelFacialLandmarksDetectionl")
 
+    logging.info("Loading ModelHeadPoseEstimation")
     head_pose = ModelHeadPoseEstimation(model_head_pose_estimation, device, threshold, extensions)
     head_pose.load_model()
+    logging.info("Loaded ModelFacialLandmarksDetectionl")
 
+    logging.info("Loading ModelGazeEstimation")
     gaze_estimation = ModelGazeEstimation(model_gaze_estimation, device, threshold, extensions)
     gaze_estimation.load_model()
+    logging.info("Loaded ModelFacialLandmarksDetectionl")
 
     mouse_controller = MouseController(cursor_precision, cursor_speed)
 
